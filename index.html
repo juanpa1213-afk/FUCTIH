@@ -10,28 +10,34 @@
     #reader { width: 220px; margin: 0 auto; }
     #estado { padding: 10px; margin: 8px 0; border-radius: 6px; background: #eef; font-size: 14px; text-align: center; }
     .ok { background: #dfd !important; } .dup { background: #ffd !important; } .error { background: #fdd !important; }
-    .tipos { display: flex; gap: 6px; margin: 10px 0; }
-    .tipo-btn { flex: 1; padding: 8px 2px; border: 2px solid #ccc; border-radius: 8px; background: #fff; font-size: 12px; }
-    .tipo-btn.activo { border-color: #1a73e8; background: #e8f0fe; font-weight: bold; }
-    .contadores { display: flex; gap: 6px; margin: 10px 0; }
-    .contador-box { flex: 1; text-align: center; background: #f5f5f5; border-radius: 8px; padding: 8px 2px; }
-    .contador-box .num { font-size: 22px; font-weight: bold; color: #1a73e8; }
-    .contador-box .label { font-size: 11px; color: #555; }
+    .secciones { display: flex; gap: 6px; margin: 10px 0; }
+    .sec-btn { flex: 1; padding: 8px 2px; border: 2px solid #ccc; border-radius: 8px; background: #fff; font-size: 12px; }
+    .sec-btn.activo { border-color: #1a73e8; background: #e8f0fe; font-weight: bold; }
+    select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
+    .contador-box { text-align: center; background: #f5f5f5; border-radius: 8px; padding: 8px; margin: 8px 0; }
+    .contador-box .num { font-size: 26px; font-weight: bold; color: #1a73e8; }
+    .contador-box .label { font-size: 12px; color: #555; }
   </style>
 </head>
 <body>
   <h3 style="text-align:center; margin-bottom:6px;">Registro de Asistencia</h3>
 
-  <div class="contadores">
-    <div class="contador-box"><div class="num" id="cEntrada">0</div><div class="label">Entrada</div></div>
-    <div class="contador-box"><div class="num" id="cTaller">0</div><div class="label">Taller</div></div>
-    <div class="contador-box"><div class="num" id="cConferencia">0</div><div class="label">Conferencia</div></div>
+  <div class="secciones">
+    <button class="sec-btn activo" onclick="elegirSeccion('Entrada', this)">Entrada</button>
+    <button class="sec-btn" onclick="elegirSeccion('Conferencia', this)">Conferencia</button>
+    <button class="sec-btn" onclick="elegirSeccion('Taller', this)">Taller</button>
+    <button class="sec-btn" onclick="elegirSeccion('Foro', this)">Foro</button>
   </div>
 
-  <div class="tipos">
-    <button class="tipo-btn activo" onclick="elegirTipo('Entrada', this)">Entrada</button>
-    <button class="tipo-btn" onclick="elegirTipo('Taller', this)">Taller</button>
-    <button class="tipo-btn" onclick="elegirTipo('Conferencia', this)">Conferencia</button>
+  <div id="selectorEvento" style="display:none;">
+    <select id="eventoSelect" onchange="cambiarEvento()">
+      <option value="">Cargando eventos...</option>
+    </select>
+  </div>
+
+  <div class="contador-box">
+    <div class="num" id="contadorNum">0</div>
+    <div class="label" id="contadorLabel">Entrada registrada</div>
   </div>
 
   <div id="reader"></div>
@@ -39,49 +45,100 @@
 
   <script>
     const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbx5txFJgDQh3DNKzrPWAMF8pRRsFxp55R1a_P1V7rFVejTAjzHThHW002gjWZk3E5pBFQ/exec';
-    let tipoActual = 'Entrada';
+    let seccionActual = 'Entrada';
+    let eventoActual = '';
     let bloqueado = false;
 
-    function elegirTipo(tipo, boton) {
-      tipoActual = tipo;
-      document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('activo'));
+    function elegirSeccion(seccion, boton) {
+      seccionActual = seccion;
+      eventoActual = '';
+      document.querySelectorAll('.sec-btn').forEach(b => b.classList.remove('activo'));
       boton.classList.add('activo');
+
+      if (seccion === 'Entrada') {
+        document.getElementById('selectorEvento').style.display = 'none';
+        document.getElementById('contadorLabel').textContent = 'Entrada registrada';
+        actualizarContadorEntrada();
+      } else {
+        document.getElementById('selectorEvento').style.display = 'block';
+        cargarEventos(seccion);
+      }
     }
 
-    function actualizarContadores() {
+    function cargarEventos(seccion) {
+      const select = document.getElementById('eventoSelect');
+      select.innerHTML = '<option value="">Cargando eventos...</option>';
+      document.getElementById('contadorNum').textContent = '0';
+      document.getElementById('contadorLabel').textContent = 'Elige un evento';
+
+      fetch(URL_SCRIPT + '?accion=listarEventos&seccion=' + seccion + '&_=' + Date.now(), { cache: 'no-store' })
+        .then(r => r.json())
+        .then(eventos => {
+          select.innerHTML = '<option value="">-- Selecciona el evento --</option>';
+          eventos.forEach(ev => {
+            const opt = document.createElement('option');
+            opt.value = ev.nombre;
+            opt.textContent = ev.hora + ' — ' + ev.nombre;
+            select.appendChild(opt);
+          });
+        });
+    }
+
+    function cambiarEvento() {
+      eventoActual = document.getElementById('eventoSelect').value;
+      if (eventoActual) {
+        document.getElementById('contadorLabel').textContent = eventoActual;
+        actualizarContadorEvento();
+      }
+    }
+
+    function actualizarContadorEntrada() {
       fetch(URL_SCRIPT + '?accion=contarAsistencia&_=' + Date.now(), { cache: 'no-store' })
         .then(r => r.json())
-        .then(c => {
-          document.getElementById('cEntrada').textContent = c.Entrada;
-          document.getElementById('cTaller').textContent = c.Taller;
-          document.getElementById('cConferencia').textContent = c.Conferencia;
-        })
-        .catch(() => {});
+        .then(c => document.getElementById('contadorNum').textContent = c.Entrada);
+    }
+
+    function actualizarContadorEvento() {
+      fetch(URL_SCRIPT + '?accion=contarEvento&seccion=' + seccionActual + '&evento=' + encodeURIComponent(eventoActual) + '&_=' + Date.now(), { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => document.getElementById('contadorNum').textContent = d.total);
     }
 
     function alLeer(idQR) {
       if (bloqueado) return;
-      bloqueado = true;
 
+      if (seccionActual !== 'Entrada' && !eventoActual) {
+        alert('Primero selecciona un evento');
+        return;
+      }
+
+      bloqueado = true;
       const est = document.getElementById('estado');
       est.className = '';
       est.textContent = 'Buscando...';
 
-      const url = URL_SCRIPT + '?accion=guardarAsistencia&id=' + encodeURIComponent(idQR) + '&tipo=' + encodeURIComponent(tipoActual) + '&_=' + Date.now();
-      
+      let url;
+      if (seccionActual === 'Entrada') {
+        url = URL_SCRIPT + '?accion=guardarAsistencia&id=' + encodeURIComponent(idQR) + '&tipo=Entrada';
+      } else {
+        url = URL_SCRIPT + '?accion=guardarAsistenciaEvento&id=' + encodeURIComponent(idQR) + '&seccion=' + seccionActual + '&evento=' + encodeURIComponent(eventoActual);
+      }
+      url += '&_=' + Date.now();
+
       fetch(url, { cache: 'no-store' })
         .then(r => r.json())
         .then(r => {
           if (!r.ok) {
             est.className = 'error';
-            est.textContent = 'No encontrado: ' + idQR;
+            est.textContent = r.error || ('No encontrado: ' + idQR);
           } else if (r.duplicado) {
             est.className = 'dup';
-            est.textContent = r.nombre + ' ya tiene ' + r.tipo;
+            est.textContent = r.nombre + ' ya está registrado aquí';
           } else {
             est.className = 'ok';
-            est.textContent = r.nombre + ' — ' + r.tipo + ' ✓';
-            actualizarContadores(); // solo actualiza si fue un registro nuevo
+            est.textContent = r.nombre + ' ✓';
+            if (seccionActual === 'Entrada') actualizarContadorEntrada();
+            else actualizarContadorEvento();
           }
           setTimeout(() => { bloqueado = false; est.className = ''; est.textContent = 'Apunta la cámara a un código QR'; }, 1800);
         })
@@ -94,7 +151,7 @@
 
     const lector = new Html5QrcodeScanner('reader', { fps: 10, qrbox: 200 }, false);
     lector.render(alLeer, () => {});
-    actualizarContadores(); // carga los contadores al abrir la página
+    actualizarContadorEntrada();
   </script>
 </body>
 </html>
