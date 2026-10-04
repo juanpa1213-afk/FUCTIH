@@ -3,45 +3,114 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Asistencia QR</title>
+  <title>Feria Universitaria - Asistencia</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 420px; margin: 0 auto; padding: 10px; }
-    #reader { width: 220px; margin: 0 auto; }
-    #estado { padding: 10px; margin: 8px 0; border-radius: 6px; background: #eef; font-size: 14px; text-align: center; }
-    .ok { background: #dfd !important; } .dup { background: #ffd !important; } .error { background: #fdd !important; }
-    .secciones { display: flex; gap: 6px; margin: 10px 0; }
-    .sec-btn { flex: 1; padding: 8px 2px; border: 2px solid #ccc; border-radius: 8px; background: #fff; font-size: 12px; }
-    .sec-btn.activo { border-color: #1a73e8; background: #e8f0fe; font-weight: bold; }
-    select { width: 100%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; }
-    .contador-box { text-align: center; background: #f5f5f5; border-radius: 8px; padding: 8px; margin: 8px 0; }
-    .contador-box .num { font-size: 26px; font-weight: bold; color: #1a73e8; }
-    .contador-box .label { font-size: 12px; color: #555; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 0 0 24px 0;
+      background: linear-gradient(180deg, #0a2540 0%, #103a5e 40%, #1a5276 100%);
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    .encabezado {
+      text-align: center;
+      padding: 18px 14px 14px;
+      background: rgba(255,255,255,0.05);
+      border-bottom: 2px solid #4fc3f7;
+    }
+    .encabezado .mini {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: #4fc3f7;
+      font-weight: bold;
+    }
+    .encabezado h1 {
+      font-size: 17px;
+      margin: 4px 0 0;
+      text-transform: uppercase;
+      line-height: 1.25;
+      letter-spacing: 0.5px;
+    }
+
+    .contenido { padding: 14px; }
+
+    .secciones { display: flex; gap: 6px; margin: 14px 0 10px; }
+    .sec-btn {
+      flex: 1; padding: 10px 2px; border: 2px solid rgba(255,255,255,0.25);
+      border-radius: 10px; background: rgba(255,255,255,0.08); color: #fff;
+      font-size: 12px; font-weight: 600; transition: all 0.15s;
+    }
+    .sec-btn.activo { border-color: #4fc3f7; background: #4fc3f7; color: #0a2540; }
+
+    select {
+      width: 100%; padding: 11px; margin: 8px 0 4px; border-radius: 8px;
+      border: none; font-size: 14px; background: #fff; color: #0a2540;
+    }
+
+    .contador-box {
+      text-align: center; background: rgba(255,255,255,0.95); color: #0a2540;
+      border-radius: 12px; padding: 14px 8px; margin: 12px 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+    .contador-box .num { font-size: 32px; font-weight: 800; color: #0a5c99; }
+    .contador-box .label { font-size: 12px; color: #555; margin-top: 2px; }
+
+    #reader {
+      width: 220px; margin: 10px auto; border-radius: 12px; overflow: hidden;
+      border: 3px solid #4fc3f7;
+    }
+
+    #estado {
+      padding: 10px; margin: 8px 0; border-radius: 8px;
+      background: rgba(255,255,255,0.9); color: #0a2540;
+      font-size: 14px; text-align: center; font-weight: 600;
+      min-height: 20px;
+    }
+    .ok { background: #bdf7c7 !important; }
+    .dup { background: #fff3b0 !important; }
+    .error { background: #ffc2c2 !important; }
+
+    .logos {
+      text-align: center; font-size: 10px; color: #a9c6de;
+      margin-top: 18px; letter-spacing: 1px;
+    }
   </style>
 </head>
 <body>
-  <h3 style="text-align:center; margin-bottom:6px;">Registro de Asistencia</h3>
-
-  <div class="secciones">
-    <button class="sec-btn activo" onclick="elegirSeccion('Entrada', this)">Entrada</button>
-    <button class="sec-btn" onclick="elegirSeccion('Conferencia', this)">Conferencia</button>
-    <button class="sec-btn" onclick="elegirSeccion('Taller', this)">Taller</button>
-    <button class="sec-btn" onclick="elegirSeccion('Foro', this)">Foro</button>
+  <div class="encabezado">
+    <div class="mini">FERIA UNIVERSITARIA</div>
+    <h1>Ciencia, Tecnología e<br>Innovación del Huila</h1>
   </div>
 
-  <div id="selectorEvento" style="display:none;">
-    <select id="eventoSelect" onchange="cambiarEvento()">
-      <option value="">Cargando eventos...</option>
-    </select>
-  </div>
+  <div class="contenido">
+    <div class="secciones">
+      <button class="sec-btn activo" onclick="elegirSeccion('Entrada', this)">Entrada</button>
+      <button class="sec-btn" onclick="elegirSeccion('Conferencia', this)">Conferencia</button>
+      <button class="sec-btn" onclick="elegirSeccion('Taller', this)">Taller</button>
+      <button class="sec-btn" onclick="elegirSeccion('Foro', this)">Foro</button>
+    </div>
 
-  <div class="contador-box">
-    <div class="num" id="contadorNum">0</div>
-    <div class="label" id="contadorLabel">Entrada registrada</div>
-  </div>
+    <div id="selectorEvento" style="display:none;">
+      <select id="eventoSelect" onchange="cambiarEvento()">
+        <option value="">Cargando eventos...</option>
+      </select>
+    </div>
 
-  <div id="reader"></div>
-  <div id="estado">Apunta la cámara a un código QR</div>
+    <div class="contador-box">
+      <div class="num" id="contadorNum">0</div>
+      <div class="label" id="contadorLabel">Entrada registrada</div>
+    </div>
+
+    <div id="reader"></div>
+    <div id="estado">Apunta la cámara a un código QR</div>
+
+    <div class="logos">USCO · ORGANIZA</div>
+  </div>
 
   <script>
     const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbx5txFJgDQh3DNKzrPWAMF8pRRsFxp55R1a_P1V7rFVejTAjzHThHW002gjWZk3E5pBFQ/exec';
