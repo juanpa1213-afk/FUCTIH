@@ -49,7 +49,7 @@
     }
 
     function actualizarContadores() {
-      fetch(URL_SCRIPT + '?accion=contarAsistencia')
+      fetch(URL_SCRIPT + '?accion=contarAsistencia&_=' + Date.now(), { cache: 'no-store' })
         .then(r => r.json())
         .then(c => {
           document.getElementById('cEntrada').textContent = c.Entrada;
@@ -67,9 +67,9 @@
       est.className = '';
       est.textContent = 'Buscando...';
 
-      const url = URL_SCRIPT + '?accion=guardarAsistencia&id=' + encodeURIComponent(idQR) + '&tipo=' + encodeURIComponent(tipoActual);
-
-      fetch(url)
+      const url = URL_SCRIPT + '?accion=guardarAsistencia&id=' + encodeURIComponent(idQR) + '&tipo=' + encodeURIComponent(tipoActual) + '&_=' + Date.now();
+      
+      fetch(url, { cache: 'no-store' })
         .then(r => r.json())
         .then(r => {
           if (!r.ok) {
