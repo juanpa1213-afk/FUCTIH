@@ -6,19 +6,28 @@
   <title>Asistencia QR</title>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 12px; }
-    #reader { width: 100%; }
-    #estado { padding: 12px; margin: 10px 0; border-radius: 6px; background: #eef; font-size: 15px; }
+    body { font-family: Arial, sans-serif; max-width: 420px; margin: 0 auto; padding: 10px; }
+    #reader { width: 220px; margin: 0 auto; }
+    #estado { padding: 10px; margin: 8px 0; border-radius: 6px; background: #eef; font-size: 14px; text-align: center; }
     .ok { background: #dfd !important; } .dup { background: #ffd !important; } .error { background: #fdd !important; }
-    .tipos { display: flex; gap: 8px; margin: 12px 0; }
-    .tipo-btn { flex: 1; padding: 12px 4px; border: 2px solid #ccc; border-radius: 8px; background: #fff; font-size: 14px; }
+    .tipos { display: flex; gap: 6px; margin: 10px 0; }
+    .tipo-btn { flex: 1; padding: 8px 2px; border: 2px solid #ccc; border-radius: 8px; background: #fff; font-size: 12px; }
     .tipo-btn.activo { border-color: #1a73e8; background: #e8f0fe; font-weight: bold; }
+    .contadores { display: flex; gap: 6px; margin: 10px 0; }
+    .contador-box { flex: 1; text-align: center; background: #f5f5f5; border-radius: 8px; padding: 8px 2px; }
+    .contador-box .num { font-size: 22px; font-weight: bold; color: #1a73e8; }
+    .contador-box .label { font-size: 11px; color: #555; }
   </style>
 </head>
 <body>
-  <h2>Registro de Asistencia</h2>
+  <h3 style="text-align:center; margin-bottom:6px;">Registro de Asistencia</h3>
 
-  <p>Selecciona qué estás registrando:</p>
+  <div class="contadores">
+    <div class="contador-box"><div class="num" id="cEntrada">0</div><div class="label">Entrada</div></div>
+    <div class="contador-box"><div class="num" id="cTaller">0</div><div class="label">Taller</div></div>
+    <div class="contador-box"><div class="num" id="cConferencia">0</div><div class="label">Conferencia</div></div>
+  </div>
+
   <div class="tipos">
     <button class="tipo-btn activo" onclick="elegirTipo('Entrada', this)">Entrada</button>
     <button class="tipo-btn" onclick="elegirTipo('Taller', this)">Taller</button>
@@ -39,6 +48,17 @@
       boton.classList.add('activo');
     }
 
+    function actualizarContadores() {
+      fetch(URL_SCRIPT + '?accion=contarAsistencia')
+        .then(r => r.json())
+        .then(c => {
+          document.getElementById('cEntrada').textContent = c.Entrada;
+          document.getElementById('cTaller').textContent = c.Taller;
+          document.getElementById('cConferencia').textContent = c.Conferencia;
+        })
+        .catch(() => {});
+    }
+
     function alLeer(idQR) {
       if (bloqueado) return;
       bloqueado = true;
@@ -57,22 +77,24 @@
             est.textContent = 'No encontrado: ' + idQR;
           } else if (r.duplicado) {
             est.className = 'dup';
-            est.textContent = r.nombre + ' ya tiene registrada su ' + r.tipo;
+            est.textContent = r.nombre + ' ya tiene ' + r.tipo;
           } else {
             est.className = 'ok';
-            est.textContent = r.nombre + ' — ' + r.tipo + ' registrada ✓';
+            est.textContent = r.nombre + ' — ' + r.tipo + ' ✓';
+            actualizarContadores(); // solo actualiza si fue un registro nuevo
           }
-          setTimeout(() => { bloqueado = false; est.className = ''; est.textContent = 'Apunta la cámara a un código QR'; }, 2000);
+          setTimeout(() => { bloqueado = false; est.className = ''; est.textContent = 'Apunta la cámara a un código QR'; }, 1800);
         })
         .catch(e => {
           est.className = 'error';
           est.textContent = 'Error: ' + e.message;
-          setTimeout(() => { bloqueado = false; }, 2000);
+          setTimeout(() => { bloqueado = false; }, 1800);
         });
     }
 
-    const lector = new Html5QrcodeScanner('reader', { fps: 10, qrbox: 250 }, false);
+    const lector = new Html5QrcodeScanner('reader', { fps: 10, qrbox: 200 }, false);
     lector.render(alLeer, () => {});
+    actualizarContadores(); // carga los contadores al abrir la página
   </script>
 </body>
 </html>
