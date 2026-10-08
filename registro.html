@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registro en sitio</title>
+  <style>
+    /* Ajusta al tamaño del papel de tu impresora del PDA (ej. 58mm o 80mm) */
+    @page { size: 80mm auto; margin: 0; }
+
+    body { font-family: Arial, sans-serif; margin: 0; padding: 16px; background: #f5f5f5; }
+    h2 { text-align: center; margin: 8px 0 16px; }
+    .caja { max-width: 420px; margin: 0 auto; background: #fff; padding: 16px; border-radius: 10px; }
+    label { display: block; margin-top: 12px; font-size: 14px; color: #444; }
+    input { width: 100%; box-sizing: border-box; padding: 12px; font-size: 16px; margin-top: 4px;
+            border: 1px solid #ccc; border-radius: 6px; }
+    select { width: 100%; box-sizing: border-box; padding: 12px; font-size: 16px; margin-top: 4px;
+             border: 1px solid #ccc; border-radius: 6px; background: #fff; }
+    label.check { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; }
+    label.check input { width: 22px; height: 22px; margin-top: 2px; flex: none; }
+    button { width: 100%; margin-top: 18px; padding: 14px; font-size: 16px; border: 0;
+             border-radius: 8px; background: #1a73e8; color: #fff; }
+    button.sec { background: #666; margin-top: 10px; }
+    button:disabled { opacity: .6; }
+    #msg { margin-top: 12px; text-align: center; font-size: 14px; min-height: 18px; }
+    .error { color: #c62828; }
+    .ok { color: #2e7d32; }
+
+    /* Escarapela */
+    #escarapela { display: none; text-align: center; margin: 16px auto 0; padding: 12px;
+                  width: 70mm; background: #fff; border: 1px dashed #aaa; }
+    #escarapela .nombre { font-size: 20px; font-weight: bold; margin: 6px 0 2px; word-wrap: break-word; }
+    #escarapela .inst { font-size: 14px; margin-bottom: 8px; word-wrap: break-word; }
+    #escarapela img { width: 45mm; height: 45mm; }
+    #escarapela .id { font-size: 12px; margin-top: 4px; color: #444; }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .caja, h2 { display: none; }
+      #escarapela { display: block; border: 0; margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+  <h2>Registro en sitio</h2>
+
+  <div class="caja" id="formulario">
+    <label>Correo electrónico
+      <input id="correo" type="email" autocomplete="off">
+    </label>
+    <label>Nombre y apellidos *
+      <input id="nombre" autocomplete="off">
+    </label>
+    <label>Número de documento de identidad *
+      <input id="documento" inputmode="numeric" autocomplete="off">
+    </label>
+    <label>Número telefónico
+      <input id="telefono" type="tel" autocomplete="off">
+    </label>
+    <label>Perfil
+      <select id="perfil">
+        <option value="">Seleccione...</option>
+        <option>Estudiante</option>
+        <option>Docente</option>
+        <option>Administrativo</option>
+        <option>Egresado</option>
+        <option>Otro</option>
+      </select>
+    </label>
+    <label>Institución a la que pertenece
+      <input id="institucion" autocomplete="off">
+    </label>
+    <label>¿Cómo se enteró del evento?
+      <select id="comoSeEntero" onchange="alternarOtro()">
+        <option value="">Seleccione...</option>
+        <option>Redes sociales</option>
+        <option>Correo electrónico</option>
+        <option>Página web</option>
+        <option>Amigos o compañeros</option>
+        <option>Otro</option>
+      </select>
+    </label>
+    <label id="bloqueOtro" style="display:none;">¿Cómo se enteró? (otro)
+      <input id="otroMedio" autocomplete="off">
+    </label>
+
+    <label class="check">
+      <input type="checkbox" id="autorizacion">
+      <span>Autorizo el tratamiento de mis datos personales según la Política de Privacidad de Datos Personales de la Universidad Surcolombiana. *</span>
+    </label>
+
+    <label>Clave del staff *
+      <input id="clave" type="password" autocomplete="off">
+    </label>
+
+    <button id="btnRegistrar" onclick="registrar()">Registrar e imprimir</button>
+    <div id="msg"></div>
+  </div>
+
+  <div id="escarapela">
+    <div class="nombre" id="eNombre"></div>
+    <div class="inst" id="eInst"></div>
+    <img id="eQR" alt="QR">
+    <div class="id" id="eId"></div>
+  </div>
+
+  <div class="caja" id="acciones" style="display:none; margin-top:12px;">
+    <button onclick="window.print()">Imprimir de nuevo</button>
+    <button class="sec" onclick="nuevo()">Registrar otra persona</button>
+  </div>
+
+<script>
+  // Pega aquí la URL /exec de tu Web App (la misma que usa tu lector QR)
+  const API = 'PEGA_AQUI_LA_URL_DE_TU_WEB_APP/exec';
+
+  const $ = id => document.getElementById(id);
+
+  function alternarOtro() {
+    $('bloqueOtro').style.display = $('comoSeEntero').value === 'Otro' ? 'block' : 'none';
+  }
+
+  async function registrar() {
+    const nombre = $('nombre').value.trim();
+    const documento = $('documento').value.trim();
+    const clave = $('clave').value;
+    if (!nombre) return mostrar('Escribe el nombre y apellidos', true);
+    if (!documento) return mostrar('Escribe el número de documento', true);
+    if (!$('autorizacion').checked) return mostrar('Debe aceptar la autorización de datos', true);
+    if (!clave) return mostrar('Escribe la clave del staff', true);
+
+    $('btnRegistrar').disabled = true;
+    mostrar('Registrando...', false);
+
+    const params = new URLSearchParams({
+      accion: 'registrarPersona',
+      correo: $('correo').value.trim(),
+      nombre: nombre,
+      documento: documento,
+      telefono: $('telefono').value.trim(),
+      perfil: $('perfil').value,
+      institucion: $('institucion').value.trim(),
+      comoSeEntero: $('comoSeEntero').value,
+      otroMedio: $('otroMedio').value.trim(),
+      autorizacion: 'Sí',
+      clave: clave
+    });
+
+    try {
+      const resp = await fetch(API + '?' + params.toString());
+      const r = await resp.json();
+
+      if (!r.ok) {
+        mostrar(r.error || 'No se pudo registrar', true);
+        $('btnRegistrar').disabled = false;
+        return;
+      }
+
+      // Llena la escarapela
+      $('eNombre').textContent = r.nombre;
+      $('eInst').textContent = r.institucion;
+      $('eId').textContent = r.id;
+      $('eQR').onload = () => setTimeout(() => window.print(), 300);
+      $('eQR').src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(r.id);
+      $('escarapela').style.display = 'block';
+      $('formulario').style.display = 'none';
+      $('acciones').style.display = 'block';
+      if (r.yaRegistrado) alert('Este documento ya estaba registrado. Se reimprime su escarapela.');
+    } catch (err) {
+      mostrar('Error de conexión: ' + err.message, true);
+      $('btnRegistrar').disabled = false;
+    }
+  }
+
+  function nuevo() {
+    ['correo', 'nombre', 'documento', 'telefono', 'perfil', 'institucion', 'comoSeEntero', 'otroMedio']
+      .forEach(id => $(id).value = '');
+    $('autorizacion').checked = false;
+    alternarOtro();
+    $('escarapela').style.display = 'none';
+    $('acciones').style.display = 'none';
+    $('formulario').style.display = 'block';
+    $('btnRegistrar').disabled = false;
+    mostrar('', false);
+    $('nombre').focus();
+  }
+
+  function mostrar(texto, esError) {
+    $('msg').textContent = texto;
+    $('msg').className = esError ? 'error' : 'ok';
+  }
+</script>
+</body>
+</html>
