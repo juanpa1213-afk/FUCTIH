@@ -147,7 +147,14 @@
 
     try {
       const resp = await fetch(API + '?' + params.toString());
-      const r = await resp.json();
+      const texto = await resp.text();
+      let r;
+      try { r = JSON.parse(texto); }
+      catch (e) {
+        mostrar('El servidor no devolvió JSON. Revisa la URL y el despliegue de la Web App.', true);
+        $('btnRegistrar').disabled = false;
+        return;
+      }
 
       if (!r.ok) {
         mostrar(r.error || 'No se pudo registrar', true);
