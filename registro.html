@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Registro en sitio</title>
   <style>
-    /* Impresora del PDA Netum: 58 mm (zona imprimible real ~48 mm) */
-    @page { size: 58mm auto; margin: 0; }
+    /* Impresora del PDA Netum: 58 mm (zona imprimible real ~48 mm).
+       Altura fija de 70 mm para que no salga papel de sobra.
+       Si corta el ID de abajo, sube 70mm a 75mm; si sobra papel, bájalo a 65mm. */
+    @page { size: 58mm 70mm; margin: 0; }
 
     body { font-family: Arial, sans-serif; margin: 0; padding: 16px; background: #f5f5f5; }
     h2 { text-align: center; margin: 8px 0 16px; }
@@ -35,9 +37,10 @@
     #escarapela .id { font-size: 11px; margin-top: 2px; color: #444; }
 
     @media print {
-      body { background: #fff; padding: 0; }
-      .caja, h2 { display: none; }
-      #escarapela { display: block; border: 0; margin: 0 auto; }
+      html, body { width: 58mm; height: 70mm; margin: 0; padding: 0; background: #fff; overflow: hidden; }
+      .caja, h2 { display: none !important; }
+      #escarapela { display: block; width: 48mm; margin: 0 auto; padding: 2mm 0 0; border: 0;
+                    break-inside: avoid; page-break-after: avoid; }
     }
   </style>
 </head>
@@ -111,7 +114,7 @@
   </div>
 
 <script>
-  // Pega aquí la URL /exec de tu Web App (la misma que usa tu lector QR)
+  // URL /exec de la Web App (la misma que usa el lector QR)
   const API = 'https://script.google.com/macros/s/AKfycbx5txFJgDQh3DNKzrPWAMF8pRRsFxp55R1a_P1V7rFVejTAjzHThHW002gjWZk3E5pBFQ/exec';
 
   const $ = id => document.getElementById(id);
