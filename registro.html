@@ -6,9 +6,9 @@
   <title>Registro en sitio</title>
   <style>
     /* Impresora del PDA Netum: 58 mm (zona imprimible real ~48 mm).
-       Altura fija de 70 mm para que no salga papel de sobra.
-       Si corta el ID de abajo, sube 70mm a 75mm; si sobra papel, bájalo a 65mm. */
-    @page { size: 58mm 70mm; margin: 0; }
+       Altura fija de 58 mm para que no salga papel de sobra.
+       Si corta el ID de abajo, sube 58mm a 62mm; si sobra papel, bájalo a 54mm. */
+    @page { size: 58mm 58mm; margin: 0; }
 
     body { font-family: Arial, sans-serif; margin: 0; padding: 16px; background: #f5f5f5; }
     h2 { text-align: center; margin: 8px 0 16px; }
@@ -33,11 +33,11 @@
                   width: 48mm; background: #fff; border: 1px dashed #aaa; }
     #escarapela .nombre { font-size: 16px; font-weight: bold; margin: 4px 0 2px; word-wrap: break-word; }
     #escarapela .inst { font-size: 12px; margin-bottom: 6px; word-wrap: break-word; }
-    #escarapela img { width: 38mm; height: 38mm; }
+    #escarapela img { width: 34mm; height: 34mm; }
     #escarapela .id { font-size: 11px; margin-top: 2px; color: #444; }
 
     @media print {
-      html, body { width: 58mm; height: 70mm; margin: 0; padding: 0; background: #fff; overflow: hidden; }
+      html, body { width: 58mm; height: 58mm; margin: 0; padding: 0; background: #fff; overflow: hidden; }
       .caja, h2 { display: none !important; }
       #escarapela { display: block; width: 48mm; margin: 0 auto; padding: 2mm 0 0; border: 0;
                     break-inside: avoid; page-break-after: avoid; }
