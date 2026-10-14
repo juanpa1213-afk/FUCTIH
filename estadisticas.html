@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Estadísticas - Feria Universitaria</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0 0 32px; color: #fff;
+      background: linear-gradient(180deg, #0a2540 0%, #103a5e 40%, #1a5276 100%); min-height: 100vh;
+    }
+    .encabezado { text-align: center; padding: 18px 14px 14px; background: rgba(255,255,255,0.05); border-bottom: 2px solid #4fc3f7; }
+    .encabezado .mini { font-size: 11px; letter-spacing: 2px; color: #4fc3f7; font-weight: bold; }
+    .encabezado h1 { font-size: 18px; margin: 4px 0 0; text-transform: uppercase; letter-spacing: .5px; }
+
+    .contenedor { max-width: 1000px; margin: 0 auto; padding: 14px; }
+    .oculto { display: none !important; }
+
+    .card { background: rgba(255,255,255,0.95); color: #0a2540; border-radius: 12px; padding: 14px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
+    .card h2 { font-size: 15px; margin: 0 0 10px; color: #0a5c99; }
+    .card .nota { font-size: 11px; color: #666; margin: -4px 0 8px; }
+
+    #login { max-width: 360px; margin: 40px auto 0; }
+    #login input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; margin: 8px 0; }
+    button { padding: 12px 16px; font-size: 15px; border: 0; border-radius: 8px; background: #1a73e8; color: #fff; cursor: pointer; }
+    #login button { width: 100%; }
+    #loginMsg { text-align: center; font-size: 14px; min-height: 18px; color: #c62828; }
+
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .kpi { text-align: center; }
+    .kpi .num { font-size: 32px; font-weight: 800; color: #0a5c99; line-height: 1.1; }
+    .kpi .label { font-size: 12px; color: #555; margin-top: 2px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 14px; }
+
+    .fila { margin: 9px 0; }
+    .fila .et { font-size: 13px; margin-bottom: 3px; word-wrap: break-word; }
+    .fila .linea { display: flex; align-items: center; gap: 8px; }
+    .pista { flex: 1; height: 14px; background: #e3edf5; border-radius: 7px; overflow: hidden; }
+    .barra { height: 100%; border-radius: 7px; background: rgba(79,195,247,.55); min-width: 2px; }
+    .barra.solida { background: #1a8fd0; }
+    .barra .dentro { height: 100%; background: #0a5c99; border-radius: 7px; }
+    .fila .num { font-size: 13px; font-weight: 700; min-width: 56px; text-align: right; }
+    .vacio { font-size: 13px; color: #777; padding: 8px 0; }
+
+    .pie { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; color: #a9c6de; margin-top: 6px; }
+    #errAuto { color: #ffc2c2; font-size: 12px; text-align: center; min-height: 16px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="encabezado">
+    <div class="mini">FERIA UNIVERSITARIA</div>
+    <h1>Estadísticas del evento</h1>
+  </div>
+
+  <div class="contenedor">
+
+    <div id="login" class="card">
+      <h2>Acceso del staff</h2>
+      <input id="clave" type="password" placeholder="Clave del staff" autocomplete="off">
+      <button onclick="entrar()">Ver estadísticas</button>
+      <div id="loginMsg"></div>
+    </div>
+
+    <div id="panel" class="oculto">
+      <div class="kpis">
+        <div class="card kpi"><div class="num" id="kReg">0</div><div class="label">Registrados</div></div>
+        <div class="card kpi"><div class="num" id="kEnt">0</div><div class="label">Ya ingresaron</div></div>
+        <div class="card kpi"><div class="num" id="kPct">0%</div><div class="label">Asistencia sobre registrados</div></div>
+        <div class="card kpi"><div class="num" id="kSitio">0</div><div class="label">Registrados en sitio</div></div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Perfil</h2>
+          <div class="nota">Barra clara: registrados. Barra oscura: ya ingresaron.</div>
+          <div id="gPerfil"></div>
+        </div>
+        <div class="card">
+          <h2>¿Cómo se enteró del evento?</h2>
+          <div class="nota">Barra clara: registrados. Barra oscura: ya ingresaron.</div>
+          <div id="gMedio"></div>
+        </div>
+        <div class="card">
+          <h2>Instituciones (top 12)</h2>
+          <div class="nota" id="nInst"></div>
+          <div id="gInst"></div>
+        </div>
+        <div class="card">
+          <h2>Ingresos por hora</h2>
+          <div id="gHora"></div>
+        </div>
+      </div>
+
+      <div class="grid" id="gEventos"></div>
+
+      <div class="pie">
+        <span id="actualizado"></span>
+        <button onclick="cargar()">Actualizar</button>
+      </div>
+      <div id="errAuto"></div>
+    </div>
+  </div>
+
+<script>
+  // URL /exec de la Web App (la misma que usan el lector y el registro)
+  const API = 'https://script.google.com/macros/s/AKfycbx5txFJgDQh3DNKzrPWAMF8pRRsFxp55R1a_P1V7rFVejTAjzHThHW002gjWZk3E5pBFQ/exec';
+  const REFRESCO_MS = 30000;
+
+  const $ = id => document.getElementById(id);
+  let clave = '';
+  let temporizador = null;
+
+  function entrar() {
+    clave = $('clave').value;
+    if (!clave) { $('loginMsg').textContent = 'Escribe la clave'; return; }
+    $('loginMsg').textContent = 'Cargando...';
+    cargar(true);
+  }
+
+  async function cargar(primera) {
+    try {
+      const url = API + '?accion=estadisticas&clave=' + encodeURIComponent(clave) + '&_=' + Date.now();
+      const resp = await fetch(url, { cache: 'no-store' });
+      const r = JSON.parse(await resp.text());
+
+      if (!r.ok) {
+        if (primera === true) { $('loginMsg').textContent = r.error || 'No se pudo cargar'; }
+        else { $('errAuto').textContent = r.error || 'No se pudo actualizar'; }
+        return;
+      }
+
+      $('errAuto').textContent = '';
+      $('login').classList.add('oculto');
+      $('panel').classList.remove('oculto');
+      pintar(r);
+
+      if (!temporizador) temporizador = setInterval(() => cargar(false), REFRESCO_MS);
+    } catch (e) {
+      if (primera === true) $('loginMsg').textContent = 'Error de conexión: ' + e.message;
+      else $('errAuto').textContent = 'No se pudo actualizar (' + e.message + '). Se muestran los últimos datos.';
+    }
+  }
+
+  function pintar(r) {
+    $('kReg').textContent = r.totalRegistrados;
+    $('kEnt').textContent = r.entrada;
+    $('kPct').textContent = (r.totalRegistrados ? Math.round(r.entrada / r.totalRegistrados * 100) : 0) + '%';
+    $('kSitio').textContent = r.enSitio;
+
+    barras('gPerfil', r.perfil.map(i => ({ etiqueta: i.nombre, valor: i.total, valor2: i.asistio })));
+    barras('gMedio', r.comoSeEntero.map(i => ({ etiqueta: i.nombre, valor: i.total, valor2: i.asistio })));
+    barras('gInst', r.instituciones.map(i => ({ etiqueta: i.nombre, valor: i.total })));
+    $('nInst').textContent = r.institucionesDistintas + ' instituciones distintas';
+    barras('gHora', r.entradaPorHora.map(i => ({ etiqueta: i.etiqueta, valor: i.total })));
+
+    // Una tarjeta por sección (Conferencia, Taller, Foro)
+    const cont = $('gEventos');
+    cont.textContent = '';
+    ['Conferencia', 'Taller', 'Foro'].forEach(sec => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const h = document.createElement('h2');
+      h.textContent = 'Asistencia: ' + sec;
+      const g = document.createElement('div');
+      g.id = 'gEv_' + sec;
+      card.append(h, g);
+      cont.appendChild(card);
+      barras(g.id, r.eventos.filter(e => e.seccion === sec).map(e => ({ etiqueta: e.evento, valor: e.total })));
+    });
+
+    $('actualizado').textContent = 'Actualizado: ' + r.actualizado + ' (se refresca cada 30 s)';
+  }
+
+  // Dibuja barras horizontales. Usa textContent (nunca innerHTML) porque
+  // los nombres vienen de lo que escribió la gente en el formulario.
+  function barras(id, items) {
+    const cont = $(id);
+    cont.textContent = '';
+    if (!items.length) {
+      const v = document.createElement('div');
+      v.className = 'vacio';
+      v.textContent = 'Sin datos todavía';
+      cont.appendChild(v);
+      return;
+    }
+    const max = Math.max.apply(null, items.map(i => i.valor).concat([1]));
+
+    items.forEach(i => {
+      const fila = document.createElement('div');
+      fila.className = 'fila';
+
+      const et = document.createElement('div');
+      et.className = 'et';
+      et.textContent = i.etiqueta;
+
+      const linea = document.createElement('div');
+      linea.className = 'linea';
+
+      const pista = document.createElement('div');
+      pista.className = 'pista';
+      const barra = document.createElement('div');
+      barra.className = 'barra';
+      barra.style.width = (i.valor / max * 100) + '%';
+
+      if (i.valor2 !== undefined) {
+        const dentro = document.createElement('div');
+        dentro.className = 'dentro';
+        dentro.style.width = (i.valor ? i.valor2 / i.valor * 100 : 0) + '%';
+        barra.appendChild(dentro);
+      } else {
+        barra.classList.add('solida');
+      }
+      pista.appendChild(barra);
+
+      const num = document.createElement('div');
+      num.className = 'num';
+      num.textContent = (i.valor2 !== undefined) ? (i.valor2 + ' / ' + i.valor) : i.valor;
+
+      linea.append(pista, num);
+      fila.append(et, linea);
+      cont.appendChild(fila);
+    });
+  }
+
+  $('clave').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+</script>
+</body>
+</html>
