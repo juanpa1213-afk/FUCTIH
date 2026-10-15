@@ -1,77 +1,292 @@
-// ============================================================
-// ASISTENCIA HACKATÓN (escaneo de QR en el index.html)
-// Pega este bloque AL FINAL de tu Code.gs.
-// Además agrega en doGetInterno_ los dos "case" indicados en las instrucciones.
-// ============================================================
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Asistencia - Feria y Hackatón</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    :root { --acento: #4fc3f7; --acento-texto: #0a2540; --num: #0a5c99; }
+    body.hackaton { --acento: #b388ff; --acento-texto: #1a0a40; --num: #6a3fc8; }
 
-// Acepta tanto el ID como la URL completa de la hoja
-function idHackaton_() {
-  const m = String(ID_HACKATON).match(/[-\w]{25,}/);
-  return m ? m[0] : String(ID_HACKATON);
-}
-
-// Pestaña donde se guarda la asistencia (en el archivo de Asistencia)
-function obtenerHojaAsistenciaHackaton_() {
-  const ss = ssAsistencia_();
-  let hoja = ss.getSheetByName('Asistencia_Hackaton');
-  if (!hoja) {
-    hoja = ss.insertSheet('Asistencia_Hackaton');
-    hoja.appendRow(['Fecha y hora', 'ID', 'Participante', 'Equipo', 'Usuario']);
-    hoja.setFrozenRows(1);
-  }
-  return hoja;
-}
-
-// Busca al participante por su ID (columna L de la hoja del hackatón)
-function buscarPersonaHackaton_(id) {
-  const hoja = hojaHackaton_();
-  const ultima = hoja.getLastRow();
-  if (ultima < 2) return null;
-
-  const datos = hoja.getRange(2, 1, ultima - 1, 12).getValues(); // A a L
-  const buscado = String(id).trim();
-  for (let i = 0; i < datos.length; i++) {
-    if (String(datos[i][11]).trim() === buscado) {   // L
-      return {
-        id: buscado,
-        equipo: String(datos[i][1]).trim(),          // B
-        nombre: String(datos[i][2]).trim()           // C
-      };
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 0 0 24px 0;
+      background: linear-gradient(180deg, #0a2540 0%, #103a5e 40%, #1a5276 100%);
+      color: #fff;
+      min-height: 100vh;
+      transition: background 0.2s;
     }
-  }
-  return null;
-}
+    body.hackaton {
+      background: linear-gradient(180deg, #1a0a40 0%, #2d1b69 40%, #44308f 100%);
+    }
 
-// Registra la entrada de un participante (una sola vez por persona)
-function guardarAsistenciaHackaton(idQR) {
-  const persona = buscarPersonaHackaton_(idQR);
-  if (!persona) return { ok: false, error: 'ID no encontrado en el hackatón: ' + idQR };
+    .modos { display: flex; gap: 0; }
+    .modo-btn {
+      flex: 1; padding: 12px 4px; border: none; background: rgba(0,0,0,0.35);
+      color: #cfd8e3; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;
+      cursor: pointer; border-bottom: 3px solid transparent;
+    }
+    .modo-btn.activo { background: rgba(255,255,255,0.08); color: #fff; border-bottom-color: var(--acento); }
 
-  const lock = LockService.getScriptLock();
-  try { lock.waitLock(10000); } catch (err) { return { ok: false, error: 'Sistema ocupado, intenta de nuevo' }; }
+    .encabezado {
+      text-align: center;
+      padding: 18px 14px 14px;
+      background: rgba(255,255,255,0.05);
+      border-bottom: 2px solid var(--acento);
+    }
+    .encabezado .mini {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--acento);
+      font-weight: bold;
+    }
+    .encabezado h1 {
+      font-size: 17px;
+      margin: 4px 0 0;
+      text-transform: uppercase;
+      line-height: 1.25;
+      letter-spacing: 0.5px;
+    }
 
-  try {
-    const hoja = obtenerHojaAsistenciaHackaton_();
-    const ultima = hoja.getLastRow();
+    .contenido { padding: 14px; }
 
-    if (ultima > 1) {
-      const ids = hoja.getRange(2, 2, ultima - 1, 1).getValues().flat();  // B = ID
-      if (ids.some(v => String(v).trim() === persona.id)) {
-        return { ok: true, duplicado: true, nombre: persona.nombre, equipo: persona.equipo };
+    .secciones { display: flex; gap: 6px; margin: 14px 0 10px; }
+    .sec-btn {
+      flex: 1; padding: 10px 2px; border: 2px solid rgba(255,255,255,0.25);
+      border-radius: 10px; background: rgba(255,255,255,0.08); color: #fff;
+      font-size: 12px; font-weight: 600; transition: all 0.15s;
+    }
+    .sec-btn.activo { border-color: var(--acento); background: var(--acento); color: var(--acento-texto); }
+
+    select {
+      width: 100%; padding: 11px; margin: 8px 0 4px; border-radius: 8px;
+      border: none; font-size: 14px; background: #fff; color: #0a2540;
+    }
+
+    .contador-box {
+      text-align: center; background: rgba(255,255,255,0.95); color: #0a2540;
+      border-radius: 12px; padding: 14px 8px; margin: 12px 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+    .contador-box .num { font-size: 32px; font-weight: 800; color: var(--num); }
+    .contador-box .label { font-size: 12px; color: #555; margin-top: 2px; }
+
+    #reader {
+      width: 220px; margin: 10px auto; border-radius: 12px; overflow: hidden;
+      border: 3px solid var(--acento);
+    }
+
+    #estado {
+      padding: 10px; margin: 8px 0; border-radius: 8px;
+      background: rgba(255,255,255,0.9); color: #0a2540;
+      font-size: 14px; text-align: center; font-weight: 600;
+      min-height: 20px;
+    }
+    .ok { background: #bdf7c7 !important; }
+    .dup { background: #fff3b0 !important; }
+    .error { background: #ffc2c2 !important; }
+
+    .logos {
+      text-align: center; font-size: 10px; color: #a9c6de;
+      margin-top: 18px; letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="modos">
+    <button class="modo-btn activo" onclick="elegirModo('feria', this)">FERIA</button>
+    <button class="modo-btn" onclick="elegirModo('hackaton', this)">HACKATÓN</button>
+  </div>
+
+  <div class="encabezado">
+    <div class="mini" id="encMini">FERIA UNIVERSITARIA</div>
+    <h1 id="encTitulo">Ciencia, Tecnología e<br>Innovación del Huila</h1>
+  </div>
+
+  <div class="contenido">
+    <!-- Controles propios de la Feria -->
+    <div id="uiFeria">
+      <div class="secciones">
+        <button class="sec-btn activo" onclick="elegirSeccion('Entrada', this)">Entrada</button>
+        <button class="sec-btn" onclick="elegirSeccion('Conferencia', this)">Conferencia</button>
+        <button class="sec-btn" onclick="elegirSeccion('Taller', this)">Taller</button>
+        <button class="sec-btn" onclick="elegirSeccion('Foro', this)">Foro</button>
+      </div>
+
+      <div id="selectorEvento" style="display:none;">
+        <select id="eventoSelect" onchange="cambiarEvento()">
+          <option value="">Cargando eventos...</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="contador-box">
+      <div class="num" id="contadorNum">0</div>
+      <div class="label" id="contadorLabel">Entrada registrada</div>
+    </div>
+
+    <div id="reader"></div>
+    <div id="estado">Apunta la cámara a un código QR</div>
+
+    <div class="logos">USCO · ORGANIZA</div>
+  </div>
+
+  <script>
+    const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycby5MEzOdmsA5YlNCLYe2DpxCUxaoXmJf4rHxXJdBYjgX_HNzwq6L6On3mO72omKOBZJXQ/exec';
+    let modo = 'feria';            // 'feria' | 'hackaton'
+    let seccionActual = 'Entrada';
+    let eventoActual = '';
+    let bloqueado = false;
+
+    // ---------- Cambio de ventana: Feria / Hackatón ----------
+    function elegirModo(nuevo, boton) {
+      modo = nuevo;
+      document.querySelectorAll('.modo-btn').forEach(b => b.classList.remove('activo'));
+      boton.classList.add('activo');
+      document.body.classList.toggle('hackaton', nuevo === 'hackaton');
+
+      const est = document.getElementById('estado');
+      est.className = '';
+      est.textContent = 'Apunta la cámara a un código QR';
+      bloqueado = false;
+
+      if (nuevo === 'hackaton') {
+        document.getElementById('uiFeria').style.display = 'none';
+        document.getElementById('encMini').textContent = 'HACKATÓN 2026';
+        document.getElementById('encTitulo').innerHTML = 'Registro de<br>participantes';
+        document.getElementById('contadorLabel').textContent = 'Ingresos al hackatón';
+        document.getElementById('contadorNum').textContent = '…';
+        actualizarContadorHackaton();
+      } else {
+        document.getElementById('uiFeria').style.display = 'block';
+        document.getElementById('encMini').textContent = 'FERIA UNIVERSITARIA';
+        document.getElementById('encTitulo').innerHTML = 'Ciencia, Tecnología e<br>Innovación del Huila';
+        elegirSeccion('Entrada', document.querySelector('#uiFeria .sec-btn'));
       }
     }
 
-    hoja.appendRow([new Date(), persona.id, persona.nombre, persona.equipo, Session.getActiveUser().getEmail()]);
-    return { ok: true, duplicado: false, nombre: persona.nombre, equipo: persona.equipo };
-  } finally {
-    lock.releaseLock();
-  }
-}
+    // ---------- Feria ----------
+    function elegirSeccion(seccion, boton) {
+      seccionActual = seccion;
+      eventoActual = '';
+      document.querySelectorAll('.sec-btn').forEach(b => b.classList.remove('activo'));
+      boton.classList.add('activo');
 
-// Cuántas personas han ingresado al hackatón
-function contarHackaton() {
-  const ss = ssAsistencia_();
-  const hoja = ss.getSheetByName('Asistencia_Hackaton');
-  if (!hoja) return 0;
-  return Math.max(0, hoja.getLastRow() - 1);
-}
+      if (seccion === 'Entrada') {
+        document.getElementById('selectorEvento').style.display = 'none';
+        document.getElementById('contadorLabel').textContent = 'Entrada registrada';
+        actualizarContadorEntrada();
+      } else {
+        document.getElementById('selectorEvento').style.display = 'block';
+        cargarEventos(seccion);
+      }
+    }
+
+    function cargarEventos(seccion) {
+      const select = document.getElementById('eventoSelect');
+      select.innerHTML = '<option value="">Cargando eventos...</option>';
+      document.getElementById('contadorNum').textContent = '0';
+      document.getElementById('contadorLabel').textContent = 'Elige un evento';
+
+      fetch(URL_SCRIPT + '?accion=listarEventos&seccion=' + seccion + '&_=' + Date.now(), { cache: 'no-store' })
+        .then(r => r.json())
+        .then(eventos => {
+          select.innerHTML = '<option value="">-- Selecciona el evento --</option>';
+          eventos.forEach(ev => {
+            const opt = document.createElement('option');
+            opt.value = ev.nombre;
+            opt.textContent = ev.hora + ' — ' + ev.nombre;
+            select.appendChild(opt);
+          });
+        });
+    }
+
+    function cambiarEvento() {
+      eventoActual = document.getElementById('eventoSelect').value;
+      if (eventoActual) {
+        document.getElementById('contadorLabel').textContent = eventoActual;
+        actualizarContadorEvento();
+      }
+    }
+
+    function actualizarContadorEntrada() {
+      fetch(URL_SCRIPT + '?accion=contarAsistencia&_=' + Date.now(), { cache: 'no-store' })
+        .then(r => r.json())
+        .then(c => { if (modo === 'feria') document.getElementById('contadorNum').textContent = c.Entrada; });
+    }
+
+    function actualizarContadorEvento() {
+      fetch(URL_SCRIPT + '?accion=contarEvento&seccion=' + seccionActual + '&evento=' + encodeURIComponent(eventoActual) + '&_=' + Date.now(), { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => { if (modo === 'feria') document.getElementById('contadorNum').textContent = d.total; });
+    }
+
+    // ---------- Hackatón ----------
+    function actualizarContadorHackaton() {
+      fetch(URL_SCRIPT + '?accion=contarHackaton&_=' + Date.now(), { cache: 'no-store' })
+        .then(r => r.json())
+        .then(d => { if (modo === 'hackaton') document.getElementById('contadorNum').textContent = d.total; });
+    }
+
+    // ---------- Lectura del QR (compartida) ----------
+    function alLeer(idQR) {
+      if (bloqueado) return;
+
+      if (modo === 'feria' && seccionActual !== 'Entrada' && !eventoActual) {
+        alert('Primero selecciona un evento');
+        return;
+      }
+
+      bloqueado = true;
+      const est = document.getElementById('estado');
+      est.className = '';
+      est.textContent = 'Buscando...';
+
+      let url;
+      if (modo === 'hackaton') {
+        url = URL_SCRIPT + '?accion=guardarAsistenciaHackaton&id=' + encodeURIComponent(idQR);
+      } else if (seccionActual === 'Entrada') {
+        url = URL_SCRIPT + '?accion=guardarAsistencia&id=' + encodeURIComponent(idQR) + '&tipo=Entrada';
+      } else {
+        url = URL_SCRIPT + '?accion=guardarAsistenciaEvento&id=' + encodeURIComponent(idQR) + '&seccion=' + seccionActual + '&evento=' + encodeURIComponent(eventoActual);
+      }
+      url += '&_=' + Date.now();
+
+      const modoAlEscanear = modo;
+
+      fetch(url, { cache: 'no-store' })
+        .then(r => r.json())
+        .then(r => {
+          const detalle = r.equipo ? ' · ' + r.equipo : '';
+          if (!r.ok) {
+            est.className = 'error';
+            est.textContent = r.error || ('No encontrado: ' + idQR);
+          } else if (r.duplicado) {
+            est.className = 'dup';
+            est.textContent = r.nombre + detalle + ' ya está registrado aquí';
+          } else {
+            est.className = 'ok';
+            est.textContent = r.nombre + detalle + ' ✓';
+            if (modoAlEscanear === 'hackaton') actualizarContadorHackaton();
+            else if (seccionActual === 'Entrada') actualizarContadorEntrada();
+            else actualizarContadorEvento();
+          }
+          setTimeout(() => { bloqueado = false; est.className = ''; est.textContent = 'Apunta la cámara a un código QR'; }, 1800);
+        })
+        .catch(e => {
+          est.className = 'error';
+          est.textContent = 'Error: ' + e.message;
+          setTimeout(() => { bloqueado = false; }, 1800);
+        });
+    }
+
+    const lector = new Html5QrcodeScanner('reader', { fps: 10, qrbox: 200 }, false);
+    lector.render(alLeer, () => {});
+    actualizarContadorEntrada();
+  </script>
+</body>
+</html>
