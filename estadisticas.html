@@ -45,6 +45,9 @@
     .fila .num { font-size: 13px; font-weight: 700; min-width: 56px; text-align: right; }
     .vacio { font-size: 13px; color: #777; padding: 8px 0; }
 
+    .filtro { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-bottom: 8px; cursor: pointer; }
+    .filtro input { width: 18px; height: 18px; }
+
     .pie { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; color: #a9c6de; margin-top: 6px; }
     #errAuto { color: #ffc2c2; font-size: 12px; text-align: center; min-height: 16px; margin-top: 6px; }
   </style>
@@ -92,6 +95,12 @@
           <h2>Ingresos por hora</h2>
           <div id="gHora"></div>
         </div>
+        <div class="card">
+          <h2>Modalidades de inscripción</h2>
+          <label class="filtro"><input type="checkbox" id="sin1v1"> Excluir modalidad 1 vs 1</label>
+          <div class="nota" id="nMod"></div>
+          <div id="gMod"></div>
+        </div>
       </div>
 
       <div class="grid" id="gEventos"></div>
@@ -112,6 +121,7 @@
   const $ = id => document.getElementById(id);
   let clave = '';
   let temporizador = null;
+  let ultimo = null;   // última respuesta del servidor (para redibujar al cambiar el filtro)
 
   function entrar() {
     clave = $('clave').value;
@@ -156,6 +166,10 @@
     $('nInst').textContent = r.institucionesDistintas + ' instituciones distintas';
     barras('gHora', r.entradaPorHora.map(i => ({ etiqueta: i.etiqueta, valor: i.total })));
 
+    // Modalidades (con o sin 1 vs 1 según la casilla)
+    ultimo = r;
+    pintarModalidades();
+
     // Una tarjeta por sección (Conferencia, Taller, Foro)
     const cont = $('gEventos');
     cont.textContent = '';
@@ -172,6 +186,19 @@
     });
 
     $('actualizado').textContent = 'Actualizado: ' + r.actualizado + ' (se refresca cada 30 s)';
+  }
+
+  // Modalidades: total por modalidad; la casilla quita la modalidad 1 vs 1
+  function pintarModalidades() {
+    if (!ultimo) return;
+    const sin = $('sin1v1').checked;
+    let lista = ultimo.modalidades || [];
+    if (sin) lista = lista.filter(m => !m.es1v1);
+    const total = lista.reduce((s, m) => s + m.total, 0);
+    barras('gMod', lista.map(m => ({ etiqueta: m.nombre, valor: m.total })));
+    $('nMod').textContent = ultimo.errorModalidades
+      ? 'No se pudo leer la hoja: ' + ultimo.errorModalidades
+      : 'Total: ' + total + ' participantes' + (sin ? ' (sin 1 vs 1)' : '');
   }
 
   // Dibuja barras horizontales. Usa textContent (nunca innerHTML) porque
@@ -226,6 +253,7 @@
   }
 
   $('clave').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+  $('sin1v1').addEventListener('change', pintarModalidades);
 </script>
 </body>
 </html>
