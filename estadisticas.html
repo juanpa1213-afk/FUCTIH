@@ -45,8 +45,12 @@
     .fila .num { font-size: 13px; font-weight: 700; min-width: 56px; text-align: right; }
     .vacio { font-size: 13px; color: #777; padding: 8px 0; }
 
-    .filtro { display: flex; gap: 8px; align-items: center; font-size: 13px; margin-bottom: 8px; cursor: pointer; }
-    .filtro input { width: 18px; height: 18px; }
+
+    .puesto { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #e3edf5; }
+    .puesto:last-child { border-bottom: 0; }
+    .puesto .medalla { font-size: 22px; }
+    .puesto .nom { flex: 1; font-size: 14px; font-weight: 600; }
+    .puesto .tiempo { font-size: 15px; font-weight: 800; color: #0a5c99; white-space: nowrap; }
 
     .pie { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; color: #a9c6de; margin-top: 6px; }
     #errAuto { color: #ffc2c2; font-size: 12px; text-align: center; min-height: 16px; margin-top: 6px; }
@@ -70,8 +74,8 @@
     <div id="panel" class="oculto">
       <div class="kpis">
         <div class="card kpi"><div class="num" id="kReg">0</div><div class="label">Registrados</div></div>
-        <div class="card kpi"><div class="num" id="kEnt">0</div><div class="label">Ya ingresaron</div></div>
-        <div class="card kpi"><div class="num" id="kPct">0%</div><div class="label">Asistencia sobre registrados</div></div>
+        <div class="card kpi"><div class="num" id="kEnt">0</div><div class="label">Ya ingresaron (todos los días)</div></div>
+        <div class="card kpi"><div class="num" id="kPct">0%</div><div class="label">Personas que asistieron (sobre registrados)</div></div>
         <div class="card kpi"><div class="num" id="kSitio">0</div><div class="label">Registrados en sitio</div></div>
       </div>
 
@@ -92,14 +96,42 @@
           <div id="gInst"></div>
         </div>
         <div class="card">
+          <h2>Ingresos por día</h2>
+          <div class="nota" id="nDia"></div>
+          <div id="gDia"></div>
+        </div>
+        <div class="card">
           <h2>Ingresos por hora</h2>
           <div id="gHora"></div>
         </div>
         <div class="card">
           <h2>Modalidades de inscripción</h2>
-          <label class="filtro"><input type="checkbox" id="sin1v1"> Excluir modalidad 1 vs 1</label>
           <div class="nota" id="nMod"></div>
           <div id="gMod"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>🏆 Podio 2x2</h2>
+          <div class="nota">Promedio de tiempos</div>
+          <div class="puesto"><span class="medalla">🥇</span><span class="nom">Cristhian Gaitan Guzman</span><span class="tiempo">5.43</span></div>
+          <div class="puesto"><span class="medalla">🥈</span><span class="nom">Vanessa Angarita Alfonso</span><span class="tiempo">5.76</span></div>
+          <div class="puesto"><span class="medalla">🥉</span><span class="nom">Joan Andres Laguna Cabrera</span><span class="tiempo">5.79</span></div>
+        </div>
+        <div class="card">
+          <h2>🏆 Podio Pyraminx</h2>
+          <div class="nota">Promedio de tiempos</div>
+          <div class="puesto"><span class="medalla">🥇</span><span class="nom">Joan Andres Laguna Cabrera</span><span class="tiempo">9.01</span></div>
+          <div class="puesto"><span class="medalla">🥈</span><span class="nom">Cristhian Gaitan Guzman</span><span class="tiempo">9.18</span></div>
+          <div class="puesto"><span class="medalla">🥉</span><span class="nom">Andrea Gutierrez Linares</span><span class="tiempo">10.54</span></div>
+        </div>
+        <div class="card">
+          <h2>🏆 Podio 3x3</h2>
+          <div class="nota">Promedio de tiempos</div>
+          <div class="puesto"><span class="medalla">🥇</span><span class="nom">Joan Andres Laguna Cabrera</span><span class="tiempo">11.88</span></div>
+          <div class="puesto"><span class="medalla">🥈</span><span class="nom">Cristhian Gaitan Guzman</span><span class="tiempo">13.54</span></div>
+          <div class="puesto"><span class="medalla">🥉</span><span class="nom">Juan Andres Giraldo Perez</span><span class="tiempo">14.37</span></div>
         </div>
       </div>
 
@@ -157,7 +189,7 @@
   function pintar(r) {
     $('kReg').textContent = r.totalRegistrados;
     $('kEnt').textContent = r.entrada;
-    $('kPct').textContent = (r.totalRegistrados ? Math.round(r.entrada / r.totalRegistrados * 100) : 0) + '%';
+    $('kPct').textContent = (r.totalRegistrados ? Math.round((r.personasEntrada || 0) / r.totalRegistrados * 100) : 0) + '%';
     $('kSitio').textContent = r.enSitio;
 
     barras('gPerfil', r.perfil.map(i => ({ etiqueta: i.nombre, valor: i.total, valor2: i.asistio })));
@@ -165,6 +197,8 @@
     barras('gInst', r.instituciones.map(i => ({ etiqueta: i.nombre, valor: i.total })));
     $('nInst').textContent = r.institucionesDistintas + ' instituciones distintas';
     barras('gHora', r.entradaPorHora.map(i => ({ etiqueta: i.etiqueta, valor: i.total })));
+    barras('gDia', (r.entradaPorDia || []).map(i => ({ etiqueta: i.dia, valor: i.total })));
+    $('nDia').textContent = 'Total de todos los días: ' + r.entrada;
 
     // Modalidades (con o sin 1 vs 1 según la casilla)
     ultimo = r;
@@ -188,17 +222,15 @@
     $('actualizado').textContent = 'Actualizado: ' + r.actualizado + ' (se refresca cada 30 s)';
   }
 
-  // Modalidades: total por modalidad; la casilla quita la modalidad 1 vs 1
+  // Modalidades: total por modalidad (el servidor ya excluye 1 vs 1)
   function pintarModalidades() {
     if (!ultimo) return;
-    const sin = $('sin1v1').checked;
-    let lista = ultimo.modalidades || [];
-    if (sin) lista = lista.filter(m => !m.es1v1);
+    const lista = ultimo.modalidades || [];
     const total = lista.reduce((s, m) => s + m.total, 0);
     barras('gMod', lista.map(m => ({ etiqueta: m.nombre, valor: m.total })));
     $('nMod').textContent = ultimo.errorModalidades
       ? 'No se pudo leer la hoja: ' + ultimo.errorModalidades
-      : 'Total: ' + total + ' participantes' + (sin ? ' (sin 1 vs 1)' : '');
+      : 'Total: ' + total + ' participantes';
   }
 
   // Dibuja barras horizontales. Usa textContent (nunca innerHTML) porque
@@ -253,7 +285,6 @@
   }
 
   $('clave').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
-  $('sin1v1').addEventListener('change', pintarModalidades);
 </script>
 </body>
 </html>
