@@ -113,6 +113,19 @@
 
       <div class="grid">
         <div class="card">
+          <h2>🤖 Robótica: equipos por competencia</h2>
+          <div class="nota" id="nRobEq"></div>
+          <div id="gRobEq"></div>
+        </div>
+        <div class="card">
+          <h2>🤖 Robótica: participantes por competencia</h2>
+          <div class="nota" id="nRobPa"></div>
+          <div id="gRobPa"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
           <h2>🏆 Podio 2x2</h2>
           <div class="nota">Promedio de tiempos</div>
           <div class="puesto"><span class="medalla">🥇</span><span class="nom">Cristhian Gaitan Guzman</span><span class="tiempo">5.43</span></div>
@@ -203,6 +216,7 @@
     // Modalidades (con o sin 1 vs 1 según la casilla)
     ultimo = r;
     pintarModalidades();
+    pintarRobotica(r);
 
     // Una tarjeta por sección (Conferencia, Taller, Foro)
     const cont = $('gEventos');
@@ -231,6 +245,21 @@
     $('nMod').textContent = ultimo.errorModalidades
       ? 'No se pudo leer la hoja: ' + ultimo.errorModalidades
       : 'Total: ' + total + ' participantes';
+  }
+
+  // Robótica: equipos y participantes por competencia (categoría · división)
+  function pintarRobotica(r) {
+    const rob = r.robotica;
+    if (!rob) {
+      ['nRobEq', 'nRobPa'].forEach(id => { $(id).textContent = 'No se pudo leer la hoja: ' + (r.errorRobotica || 'sin datos'); });
+      barras('gRobEq', []); barras('gRobPa', []);
+      return;
+    }
+    const nombre = c => c.categoria + (c.division ? ' · ' + c.division : '');
+    barras('gRobEq', rob.competencias.map(c => ({ etiqueta: nombre(c), valor: c.equipos })));
+    barras('gRobPa', rob.competencias.map(c => ({ etiqueta: nombre(c), valor: c.participantes })));
+    $('nRobEq').textContent = 'Total: ' + rob.totalEquipos + ' equipos';
+    $('nRobPa').textContent = 'Total: ' + rob.totalParticipantes + ' participantes';
   }
 
   // Dibuja barras horizontales. Usa textContent (nunca innerHTML) porque
