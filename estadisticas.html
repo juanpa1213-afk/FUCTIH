@@ -114,7 +114,7 @@
       <div class="card"><h2>Instituciones (top 10)</h2><div class="nota" id="nInst"></div><div id="gInst"></div></div>
     </div>
 
-    <div class="seccion">🧩 Cubo Rubik</div>
+    <div class="seccion">🧩 Cubic Rubik</div>
     <div class="grid">
       <div class="card modal"><h2>Modalidades de inscripción</h2><div class="nota" id="nMod"></div><div id="gMod"></div></div>
     </div>
@@ -140,10 +140,12 @@
 
   // Podios (para editar: cambia nombres o promedios aquí)
   const PODIOS = [
-    { titulo: '2x2', puestos: [['Cristhian Gaitan Guzman', '5.43'], ['Vanessa Angarita Alfonso', '5.76'], ['Joan Andres Laguna Cabrera', '5.79']] },
-    { titulo: 'Pyraminx', puestos: [['Joan Andres Laguna Cabrera', '9.01'], ['Cristhian Gaitan Guzman', '9.18'], ['Andrea Gutierrez Linares', '10.54']] },
-    { titulo: '3x3', puestos: [['Joan Andres Laguna Cabrera', '11.88'], ['Cristhian Gaitan Guzman', '13.54'], ['Juan Andres Giraldo Perez', '14.37']] }
+    { titulo: '2x2', nota: 'Cubic Rubik · Promedio de tiempos', puestos: [['Cristhian Gaitan Guzman', '5.43'], ['Vanessa Angarita Alfonso', '5.76'], ['Joan Andres Laguna Cabrera', '5.79']] },
+    { titulo: 'Pyraminx', nota: 'Cubic Rubik · Promedio de tiempos', puestos: [['Joan Andres Laguna Cabrera', '9.01'], ['Cristhian Gaitan Guzman', '9.18'], ['Andrea Gutierrez Linares', '10.54']] },
+    { titulo: '3x3', nota: 'Cubic Rubik · Promedio de tiempos', puestos: [['Joan Andres Laguna Cabrera', '11.88'], ['Cristhian Gaitan Guzman', '13.54'], ['Juan Andres Giraldo Perez', '14.37']] }
   ];
+
+  const PODIO_HACKATON = { titulo: 'Hackatón', nota: 'Equipos ganadores', puestos: [['Grupo 5', ''], ['Grupo 6', ''], ['Grupo 9', '']] };
 
   const $ = id => document.getElementById(id);
   let temporizador = null;
@@ -252,63 +254,37 @@
     cont.appendChild(hk
       ? tarjeta('💻 Hackatón', hk.equipos, hk.participantes, 'hack')
       : aviso('💻 Hackatón', 'No se pudo leer la hoja: ' + (r.errorHackaton || 'sin datos'), 'hack'));
+    cont.appendChild(crearPodio(PODIO_HACKATON));
+  }
+
+  function crearPodio(p) {
+    const medallas = ['🥇', '🥈', '🥉'];
+    const card = document.createElement('div');
+    card.className = 'card podio';
+    const h = document.createElement('h2');
+    h.textContent = 'Podio ' + p.titulo;
+    const nota = document.createElement('div');
+    nota.className = 'nota';
+    nota.textContent = p.nota;
+    card.append(h, nota);
+    p.puestos.forEach((pu, i) => {
+      const f = document.createElement('div');
+      f.className = 'puesto p' + (i + 1);
+      const m = document.createElement('span'); m.className = 'medalla'; m.textContent = medallas[i];
+      const n = document.createElement('span'); n.className = 'nom'; n.textContent = pu[0];
+      f.append(m, n);
+      if (pu[1]) {
+        const t = document.createElement('span'); t.className = 'tiempo'; t.textContent = pu[1];
+        f.appendChild(t);
+      }
+      card.appendChild(f);
+    });
+    return card;
   }
 
   function pintarPodios() {
     const cont = $('gPodios');
-    const medallas = ['🥇', '🥈', '🥉'];
-    PODIOS.forEach(p => {
-      const card = document.createElement('div');
-      card.className = 'card podio';
-      const h = document.createElement('h2');
-      h.textContent = 'Podio ' + p.titulo;
-      const nota = document.createElement('div');
-      nota.className = 'nota';
-      nota.textContent = 'Cubo Rubik · Promedio de tiempos';
-      card.append(h, nota);
-      p.puestos.forEach((pu, i) => {
-        const f = document.createElement('div');
-        f.className = 'puesto p' + (i + 1);
-        const m = document.createElement('span'); m.className = 'medalla'; m.textContent = medallas[i];
-        const n = document.createElement('span'); n.className = 'nom'; n.textContent = pu[0];
-        const t = document.createElement('span'); t.className = 'tiempo'; t.textContent = pu[1];
-        f.append(m, n, t);
-        card.appendChild(f);
-      });
-      cont.appendChild(card);
-    });
-  }
-
-  // Columnas verticales con las horas a lo largo del eje horizontal
-  function columnas(id, items) {
-    const cont = $(id);
-    cont.textContent = '';
-    if (!items.length) {
-      const v = document.createElement('div');
-      v.className = 'vacio';
-      v.textContent = 'Sin datos todavía';
-      cont.appendChild(v);
-      return;
-    }
-    const max = Math.max.apply(null, items.map(i => i.valor).concat([1]));
-    const ALTO = 150;
-    const fila = document.createElement('div');
-    fila.className = 'cols';
-    items.forEach(i => {
-      const col = document.createElement('div');
-      col.className = 'col';
-      const val = document.createElement('div'); val.className = 'val'; val.textContent = i.valor;
-      const tira = document.createElement('div'); tira.className = 'tira';
-      tira.style.height = Math.max(3, Math.round(i.valor / max * ALTO)) + 'px';
-      const partes = String(i.etiqueta).split(' ');      // "18/10 14:00" -> fecha y hora
-      const et = document.createElement('div'); et.className = 'et';
-      const hora = document.createElement('b'); hora.textContent = partes[1] || partes[0];
-      et.appendChild(hora);
-      if (partes[1]) et.appendChild(document.createTextNode(partes[0]));
-      col.append(val, tira, et);
-      fila.appendChild(col);
-    });
-    cont.appendChild(fila);
+    PODIOS.forEach(p => cont.appendChild(crearPodio(p)));
   }
 
   // Dibuja barras horizontales. Usa textContent (nunca innerHTML) porque
