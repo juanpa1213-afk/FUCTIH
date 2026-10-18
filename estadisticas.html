@@ -287,6 +287,38 @@
     PODIOS.forEach(p => cont.appendChild(crearPodio(p)));
   }
 
+  // Columnas verticales con las horas a lo largo del eje horizontal
+  function columnas(id, items) {
+    const cont = $(id);
+    cont.textContent = '';
+    if (!items.length) {
+      const v = document.createElement('div');
+      v.className = 'vacio';
+      v.textContent = 'Sin datos todavía';
+      cont.appendChild(v);
+      return;
+    }
+    const max = Math.max.apply(null, items.map(i => i.valor).concat([1]));
+    const ALTO = 150;
+    const fila = document.createElement('div');
+    fila.className = 'cols';
+    items.forEach(i => {
+      const col = document.createElement('div');
+      col.className = 'col';
+      const val = document.createElement('div'); val.className = 'val'; val.textContent = i.valor;
+      const tira = document.createElement('div'); tira.className = 'tira';
+      tira.style.height = Math.max(3, Math.round(i.valor / max * ALTO)) + 'px';
+      const partes = String(i.etiqueta).split(' ');      // "18/10 14:00" -> fecha y hora
+      const et = document.createElement('div'); et.className = 'et';
+      const hora = document.createElement('b'); hora.textContent = partes[1] || partes[0];
+      et.appendChild(hora);
+      if (partes[1]) et.appendChild(document.createTextNode(partes[0]));
+      col.append(val, tira, et);
+      fila.appendChild(col);
+    });
+    cont.appendChild(fila);
+  }
+
   // Dibuja barras horizontales. Usa textContent (nunca innerHTML) porque
   // los nombres vienen de lo que escribió la gente en el formulario.
   function barras(id, items) {
