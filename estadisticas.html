@@ -57,6 +57,18 @@
     .col .et { font-size: 10px; color: #445; text-align: center; margin-top: 5px; line-height: 1.25; border-top: 1px solid #cfdbe6; padding-top: 3px; width: 100%; }
     .col .et b { display: block; font-size: 12px; color: #0a2540; }
 
+    /* Tarjetas de competencia */
+    .nota-sec { font-size: 13px; color: #cfe8f7; margin: -4px 0 12px; }
+    .comp { border-top: 5px solid #7c4dcc; }
+    .comp.hack { border-top-color: #f08a24; }
+    .comp h2 { font-size: 15px; }
+    .comp.hack h2 { color: #c4650a; }
+    .stats { display: flex; gap: 10px; }
+    .stat { flex: 1; text-align: center; background: #f0f6fb; border-radius: 10px; padding: 10px 6px; }
+    .stat .n { font-size: 30px; font-weight: 800; color: #7c4dcc; line-height: 1.1; }
+    .comp.hack .stat .n { color: #c4650a; }
+    .stat .l { font-size: 12px; color: #556; margin-top: 2px; }
+
     /* Podios: tarjetas doradas, distintas al resto */
     .podio { background: linear-gradient(160deg, #fff6d6 0%, #ffe9a8 100%); border: 2px solid #e6b422; color: #4a3200; }
     .podio h2 { color: #8a5a00; font-size: 17px; }
@@ -88,7 +100,7 @@
     <div class="seccion">📊 Resumen general</div>
     <div class="kpis">
       <div class="card kpi"><div class="ico">📝</div><div class="num" id="kReg">0</div><div class="label">Registrados</div></div>
-      <div class="card kpi c2"><div class="ico">✅</div><div class="num" id="kEnt">0</div><div class="label">Ingresos</div></div>
+      <div class="card kpi c2"><div class="ico">✅</div><div class="num" id="kEnt">0</div><div class="label">Ingresos (suma de todos los días)</div></div>
       <div class="card kpi c3"><div class="ico">📈</div><div class="num" id="kPct">0%</div><div class="label">Personas que asistieron (sobre registrados)</div></div>
       <div class="card kpi c4"><div class="ico">📍</div><div class="num" id="kSitio">0</div><div class="label">Registrados en sitio</div></div>
     </div>
@@ -102,15 +114,15 @@
       <div class="card"><h2>Instituciones (top 10)</h2><div class="nota" id="nInst"></div><div id="gInst"></div></div>
     </div>
 
-    <div class="seccion">🏆 Podios</div>
-    <div class="grid" id="gPodios"></div>
-
-    <div class="seccion">🎮 Competencias</div>
+    <div class="seccion">🧩 Cubic Rubik</div>
     <div class="grid">
       <div class="card modal"><h2>Modalidades de inscripción</h2><div class="nota" id="nMod"></div><div id="gMod"></div></div>
-      <div class="card robot"><h2>🤖 Robótica: equipos por competencia</h2><div class="nota" id="nRobEq"></div><div id="gRobEq"></div></div>
-      <div class="card robot"><h2>🤖 Robótica: participantes por competencia</h2><div class="nota" id="nRobPa"></div><div id="gRobPa"></div></div>
     </div>
+    <div class="grid" id="gPodios" style="margin-top:14px"></div>
+
+    <div class="seccion">🤖 Competencias</div>
+    <div class="nota-sec" id="nCompet"></div>
+    <div class="grid" id="gCompet"></div>
 
     <div class="seccion">🗓️ Asistencia por evento</div>
     <div class="grid" id="gEventos"></div>
@@ -176,7 +188,7 @@
       ? 'No se pudo leer la hoja: ' + r.errorModalidades
       : 'Total: ' + mods.reduce((s, m) => s + m.total, 0) + ' participantes';
 
-    pintarRobotica(r);
+    pintarCompetencias(r);
 
     // Una tarjeta por sección (Conferencia, Taller, Foro)
     const cont = $('gEventos');
@@ -196,18 +208,50 @@
     $('actualizado').textContent = 'Actualizado: ' + r.actualizado + ' (se refresca cada 30 s)';
   }
 
-  function pintarRobotica(r) {
+  // Una tarjeta por competencia de robótica + una para la hackatón
+  function pintarCompetencias(r) {
+    const cont = $('gCompet');
+    cont.textContent = '';
+
+    const tarjeta = (titulo, equipos, personas, clase) => {
+      const card = document.createElement('div');
+      card.className = 'card comp ' + (clase || '');
+      const h = document.createElement('h2');
+      h.textContent = titulo;
+      const st = document.createElement('div');
+      st.className = 'stats';
+      [[equipos, 'Equipos'], [personas, 'Participantes']].forEach(par => {
+        const d = document.createElement('div'); d.className = 'stat';
+        const n = document.createElement('div'); n.className = 'n'; n.textContent = par[0];
+        const l = document.createElement('div'); l.className = 'l'; l.textContent = par[1];
+        d.append(n, l); st.appendChild(d);
+      });
+      card.append(h, st);
+      return card;
+    };
+    const aviso = (titulo, texto, clase) => {
+      const card = document.createElement('div');
+      card.className = 'card comp ' + (clase || '');
+      const h = document.createElement('h2'); h.textContent = titulo;
+      const v = document.createElement('div'); v.className = 'vacio'; v.textContent = texto;
+      card.append(h, v);
+      return card;
+    };
+
     const rob = r.robotica;
-    if (!rob) {
-      ['nRobEq', 'nRobPa'].forEach(id => { $(id).textContent = 'No se pudo leer la hoja: ' + (r.errorRobotica || 'sin datos'); });
-      barras('gRobEq', []); barras('gRobPa', []);
-      return;
+    if (rob) {
+      const nombre = c => c.categoria + (c.division ? ' · ' + c.division : '');
+      rob.competencias.forEach(c => cont.appendChild(tarjeta('🤖 ' + nombre(c), c.equipos, c.participantes)));
+      $('nCompet').textContent = 'Robótica en total: ' + rob.totalEquipos + ' equipos · ' + rob.totalParticipantes + ' participantes';
+    } else {
+      cont.appendChild(aviso('🤖 Robótica', 'No se pudo leer la hoja: ' + (r.errorRobotica || 'sin datos')));
+      $('nCompet').textContent = '';
     }
-    const nombre = c => c.categoria + (c.division ? ' · ' + c.division : '');
-    barras('gRobEq', rob.competencias.map(c => ({ etiqueta: nombre(c), valor: c.equipos })));
-    barras('gRobPa', rob.competencias.map(c => ({ etiqueta: nombre(c), valor: c.participantes })));
-    $('nRobEq').textContent = 'Total: ' + rob.totalEquipos + ' equipos';
-    $('nRobPa').textContent = 'Total: ' + rob.totalParticipantes + ' participantes';
+
+    const hk = r.hackaton;
+    cont.appendChild(hk
+      ? tarjeta('💻 Hackatón', hk.equipos, hk.participantes, 'hack')
+      : aviso('💻 Hackatón', 'No se pudo leer la hoja: ' + (r.errorHackaton || 'sin datos'), 'hack'));
   }
 
   function pintarPodios() {
@@ -220,7 +264,7 @@
       h.textContent = 'Podio ' + p.titulo;
       const nota = document.createElement('div');
       nota.className = 'nota';
-      nota.textContent = 'Promedio de tiempos';
+      nota.textContent = 'Cubic Rubik · Promedio de tiempos';
       card.append(h, nota);
       p.puestos.forEach((pu, i) => {
         const f = document.createElement('div');
