@@ -69,6 +69,13 @@
     .comp.hack .stat .n { color: #c4650a; }
     .stat .l { font-size: 12px; color: #556; margin-top: 2px; }
 
+    .podio-in { margin-top: 12px; padding: 8px 10px; border-radius: 12px; border: 2px solid #e6b422;
+                background: linear-gradient(160deg, #fff6d6, #ffe9a8); color: #4a3200; }
+    .podio-in .t { font-size: 12px; font-weight: 700; color: #8a5a00; }
+    .podio-in .puesto { padding: 6px 8px; margin: 5px 0; }
+    .podio-in .puesto .nom { font-size: 13px; }
+    .podio-in .puesto .medalla { font-size: 20px; }
+
     /* Podios: tarjetas doradas, distintas al resto */
     .podio { background: linear-gradient(160deg, #fff6d6 0%, #ffe9a8 100%); border: 2px solid #e6b422; color: #4a3200; }
     .podio h2 { color: #8a5a00; font-size: 17px; }
@@ -147,6 +154,13 @@
 
   const PODIO_HACKATON = { titulo: 'Hackatón', nota: 'Equipos ganadores', puestos: [['Grupo 5', ''], ['Grupo 6', ''], ['Grupo 9', '']] };
 
+  // Podios de robótica: cuando tengas resultados, escribe el nombre de la competencia
+  // (igual que en su tarjeta: "Categoría · División") y los tres equipos. Ejemplo:
+  //   'Sumo · Junior': ['Los Rayos', 'Robo Team', 'Mecatrón']
+  // Mientras no esté escrita, se muestran Equipo A, B y C.
+  const PODIOS_ROBOTICA = {};
+  const PODIO_POR_DEFECTO = ['Equipo A', 'Equipo B', 'Equipo C'];
+
   const $ = id => document.getElementById(id);
   let temporizador = null;
   let ultimo = null;
@@ -215,7 +229,7 @@
     const cont = $('gCompet');
     cont.textContent = '';
 
-    const tarjeta = (titulo, equipos, personas, clase) => {
+    const tarjeta = (titulo, equipos, personas, clase, podio) => {
       const card = document.createElement('div');
       card.className = 'card comp ' + (clase || '');
       const h = document.createElement('h2');
@@ -229,6 +243,20 @@
         d.append(n, l); st.appendChild(d);
       });
       card.append(h, st);
+      if (podio) {
+        const caja = document.createElement('div');
+        caja.className = 'podio-in';
+        const t = document.createElement('div'); t.className = 't'; t.textContent = '🏆 Podio';
+        caja.appendChild(t);
+        const medallas = ['🥇', '🥈', '🥉'];
+        podio.slice(0, 3).forEach((nom, i) => {
+          const f = document.createElement('div'); f.className = 'puesto p' + (i + 1);
+          const m = document.createElement('span'); m.className = 'medalla'; m.textContent = medallas[i];
+          const n = document.createElement('span'); n.className = 'nom'; n.textContent = nom;
+          f.append(m, n); caja.appendChild(f);
+        });
+        card.appendChild(caja);
+      }
       return card;
     };
     const aviso = (titulo, texto, clase) => {
@@ -243,7 +271,8 @@
     const rob = r.robotica;
     if (rob) {
       const nombre = c => c.categoria + (c.division ? ' · ' + c.division : '');
-      rob.competencias.forEach(c => cont.appendChild(tarjeta('🤖 ' + nombre(c), c.equipos, c.participantes)));
+      rob.competencias.forEach(c => cont.appendChild(
+        tarjeta('🤖 ' + nombre(c), c.equipos, c.participantes, '', PODIOS_ROBOTICA[nombre(c)] || PODIO_POR_DEFECTO)));
       $('nCompet').textContent = 'Robótica en total: ' + rob.totalEquipos + ' equipos · ' + rob.totalParticipantes + ' participantes';
     } else {
       cont.appendChild(aviso('🤖 Robótica', 'No se pudo leer la hoja: ' + (r.errorRobotica || 'sin datos')));
