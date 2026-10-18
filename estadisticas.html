@@ -48,6 +48,15 @@
     .robot .barra.solida { background: linear-gradient(90deg, #b794f4, #7c4dcc); }
     .modal .barra.solida { background: linear-gradient(90deg, #6fdc9c, #2e9e5b); }
 
+    /* Gráfico de columnas (el tiempo avanza de izquierda a derecha) */
+    .ancha { grid-column: 1 / -1; }
+    .cols { display: flex; align-items: flex-end; gap: 10px; overflow-x: auto; padding: 4px 4px 8px; }
+    .col { flex: 0 0 46px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+    .col .val { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+    .col .tira { width: 30px; border-radius: 6px 6px 0 0; background: linear-gradient(0deg, #1a8fd0, #4fc3f7); min-height: 3px; }
+    .col .et { font-size: 10px; color: #445; text-align: center; margin-top: 5px; line-height: 1.25; border-top: 1px solid #cfdbe6; padding-top: 3px; width: 100%; }
+    .col .et b { display: block; font-size: 12px; color: #0a2540; }
+
     /* Podios: tarjetas doradas, distintas al resto */
     .podio { background: linear-gradient(160deg, #fff6d6 0%, #ffe9a8 100%); border: 2px solid #e6b422; color: #4a3200; }
     .podio h2 { color: #8a5a00; font-size: 17px; }
@@ -87,7 +96,7 @@
     <div class="seccion">🎟️ Asistencia</div>
     <div class="grid">
       <div class="card"><h2>Ingresos por día</h2><div class="nota" id="nDia"></div><div id="gDia"></div></div>
-      <div class="card"><h2>Ingresos por hora</h2><div id="gHora"></div></div>
+      <div class="card ancha"><h2>Ingresos por hora</h2><div class="nota">Desliza hacia los lados si hay muchas horas.</div><div id="gHora"></div></div>
       <div class="card"><h2>Perfil</h2><div class="nota">Barra clara: registrados. Barra oscura: ya ingresaron.</div><div id="gPerfil"></div></div>
       <div class="card"><h2>¿Cómo se enteró del evento?</h2><div class="nota">Barra clara: registrados. Barra oscura: ya ingresaron.</div><div id="gMedio"></div></div>
       <div class="card"><h2>Instituciones (top 12)</h2><div class="nota" id="nInst"></div><div id="gInst"></div></div>
@@ -154,7 +163,7 @@
 
     barras('gDia', (r.entradaPorDia || []).map(i => ({ etiqueta: i.dia, valor: i.total })));
     $('nDia').textContent = 'Total de todos los días: ' + r.entrada;
-    barras('gHora', r.entradaPorHora.map(i => ({ etiqueta: i.etiqueta, valor: i.total })));
+    columnas('gHora', r.entradaPorHora.map(i => ({ etiqueta: i.etiqueta, valor: i.total })));
     barras('gPerfil', r.perfil.map(i => ({ etiqueta: i.nombre, valor: i.total, valor2: i.asistio })));
     barras('gMedio', r.comoSeEntero.map(i => ({ etiqueta: i.nombre, valor: i.total, valor2: i.asistio })));
     barras('gInst', r.instituciones.map(i => ({ etiqueta: i.nombre, valor: i.total })));
@@ -224,6 +233,38 @@
       });
       cont.appendChild(card);
     });
+  }
+
+  // Columnas verticales con las horas a lo largo del eje horizontal
+  function columnas(id, items) {
+    const cont = $(id);
+    cont.textContent = '';
+    if (!items.length) {
+      const v = document.createElement('div');
+      v.className = 'vacio';
+      v.textContent = 'Sin datos todavía';
+      cont.appendChild(v);
+      return;
+    }
+    const max = Math.max.apply(null, items.map(i => i.valor).concat([1]));
+    const ALTO = 150;
+    const fila = document.createElement('div');
+    fila.className = 'cols';
+    items.forEach(i => {
+      const col = document.createElement('div');
+      col.className = 'col';
+      const val = document.createElement('div'); val.className = 'val'; val.textContent = i.valor;
+      const tira = document.createElement('div'); tira.className = 'tira';
+      tira.style.height = Math.max(3, Math.round(i.valor / max * ALTO)) + 'px';
+      const partes = String(i.etiqueta).split(' ');      // "18/10 14:00" -> fecha y hora
+      const et = document.createElement('div'); et.className = 'et';
+      const hora = document.createElement('b'); hora.textContent = partes[1] || partes[0];
+      et.appendChild(hora);
+      if (partes[1]) et.appendChild(document.createTextNode(partes[0]));
+      col.append(val, tira, et);
+      fila.appendChild(col);
+    });
+    cont.appendChild(fila);
   }
 
   // Dibuja barras horizontales. Usa textContent (nunca innerHTML) porque
