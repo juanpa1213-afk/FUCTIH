@@ -154,12 +154,32 @@
 
   const PODIO_HACKATON = { titulo: 'Hackatón', nota: 'Equipos ganadores', puestos: [['Grupo 5', ''], ['Grupo 6', ''], ['Grupo 9', '']] };
 
-  // Podios de robótica: cuando tengas resultados, escribe el nombre de la competencia
-  // (igual que en su tarjeta: "Categoría · División") y los tres equipos. Ejemplo:
-  //   'Sumo · Junior': ['Los Rayos', 'Robo Team', 'Mecatrón']
-  // Mientras no esté escrita, se muestran Equipo A, B y C.
-  const PODIOS_ROBOTICA = {};
+  // Podios de robótica. 'claves' son palabras que deben aparecer en el nombre de la competencia
+  // (categoría + división, sin importar mayúsculas, tildes, espacios ni el orden).
+  // Si una competencia no coincide con ninguna, muestra Equipo A, B y C.
+  const PODIOS_ROBOTICA = [
+    { claves: ['colegio', 'minisumo'],     equipos: ['Shadow', 'Power', 'Minipekka'] },
+    { claves: ['colegio', 'seguidor'],     equipos: ['Gaitana', 'Rayobot', 'Badline'] },
+    { claves: ['colegio', 'robogol'],      equipos: ['Stansell', 'Arenosos', 'Syntax Error'] },
+    { claves: ['colegio', 'burstbot'],     equipos: ['RobotiX1', 'Chouchas', 'Gear Fifth'] },
+    { claves: ['universidad', 'seguidor'], equipos: ['STM Tecnoacademia', 'Nova Flash', 'SpeedBoot'] },
+    { claves: ['universidad', 'robogol'],  equipos: ['RoboStrikers', 'Fasorbot', 'RobotiX2'] },
+    { claves: ['universidad', 'minisumo'], equipos: ['Don pepperoni', 'Purple Death', 'Isengard'] }
+  ];
   const PODIO_POR_DEFECTO = ['Equipo A', 'Equipo B', 'Equipo C'];
+  const compacto = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  function podioRobotica(c) {
+    const texto = compacto(c.categoria + ' ' + c.division);
+    const hallado = PODIOS_ROBOTICA.find(p => p.claves.every(k => texto.indexOf(compacto(k)) !== -1));
+    return hallado ? hallado.equipos : PODIO_POR_DEFECTO;
+  }
+
+  const norm = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const claveComp = t => String(t).split('·').map(norm).filter(Boolean).sort().join('|');
+  function podioDe(nombre) {
+    for (const k in PODIOS_ROBOTICA) if (claveComp(k) === claveComp(nombre)) return PODIOS_ROBOTICA[k];
+    return PODIO_POR_DEFECTO;
+  }
 
   const $ = id => document.getElementById(id);
   let temporizador = null;
@@ -272,7 +292,7 @@
     if (rob) {
       const nombre = c => c.categoria + (c.division ? ' · ' + c.division : '');
       rob.competencias.forEach(c => cont.appendChild(
-        tarjeta('🤖 ' + nombre(c), c.equipos, c.participantes, '', PODIOS_ROBOTICA[nombre(c)] || PODIO_POR_DEFECTO)));
+        tarjeta('🤖 ' + nombre(c), c.equipos, c.participantes, '', podioDe(nombre(c)))));
       $('nCompet').textContent = 'Robótica en total: ' + rob.totalEquipos + ' equipos · ' + rob.totalParticipantes + ' participantes';
     } else {
       cont.appendChild(aviso('🤖 Robótica', 'No se pudo leer la hoja: ' + (r.errorRobotica || 'sin datos')));
