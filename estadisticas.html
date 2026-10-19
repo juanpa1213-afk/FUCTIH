@@ -174,13 +174,6 @@
     return hallado ? hallado.equipos : PODIO_POR_DEFECTO;
   }
 
-  const norm = t => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
-  const claveComp = t => String(t).split('·').map(norm).filter(Boolean).sort().join('|');
-  function podioDe(nombre) {
-    for (const k in PODIOS_ROBOTICA) if (claveComp(k) === claveComp(nombre)) return PODIOS_ROBOTICA[k];
-    return PODIO_POR_DEFECTO;
-  }
-
   const $ = id => document.getElementById(id);
   let temporizador = null;
   let ultimo = null;
@@ -292,7 +285,7 @@
     if (rob) {
       const nombre = c => c.categoria + (c.division ? ' · ' + c.division : '');
       rob.competencias.forEach(c => cont.appendChild(
-        tarjeta('🤖 ' + nombre(c), c.equipos, c.participantes, '', podioDe(nombre(c)))));
+        tarjeta('🤖 ' + nombre(c), c.equipos, c.participantes, '', podioRobotica(c))));
       $('nCompet').textContent = 'Robótica en total: ' + rob.totalEquipos + ' equipos · ' + rob.totalParticipantes + ' participantes';
     } else {
       cont.appendChild(aviso('🤖 Robótica', 'No se pudo leer la hoja: ' + (r.errorRobotica || 'sin datos')));
