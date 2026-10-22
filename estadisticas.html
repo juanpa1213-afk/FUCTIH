@@ -107,7 +107,7 @@
     <div class="seccion">📊 Resumen general</div>
     <div class="kpis">
       <div class="card kpi"><div class="ico">📝</div><div class="num" id="kReg">0</div><div class="label">Registrados</div></div>
-      <div class="card kpi c2"><div class="ico">✅</div><div class="num" id="kEnt">0</div><div class="label">Asistentes (feria + competencias)</div><div class="label" id="kEntDet"></div></div>
+      <div class="card kpi c2"><div class="ico">✅</div><div class="num" id="kEnt">0</div><div class="label">Personas que asistieron (feria + competencias)</div><div class="label" id="kEntDet"></div></div>
       <div class="card kpi c3"><div class="ico">📈</div><div class="num" id="kPct">0%</div><div class="label">Asistencia total sobre inscritos</div></div>
       <div class="card kpi c4"><div class="ico">📍</div><div class="num" id="kSitio">0</div><div class="label">Registrados en sitio</div></div>
     </div>
@@ -198,14 +198,15 @@
   function pintar(r) {
     ultimo = r;
     $('kReg').textContent = r.totalRegistrados;
-    // Asistentes = ingresos a la feria (todos los días) + competidores (hackatón, robótica, Rubik)
-    // que NO ingresaron por la feria. El servidor cruza por nombre, así nadie se cuenta dos veces.
+    // Personas = personas distintas que entraron a la feria (cada una una vez, aunque viniera varios días)
+    // + competidores (hackatón, robótica, Rubik) que NO entraron por la feria. Nadie se cuenta dos veces.
     const c = r.competidores || { nuevosAsistentes: 0, nuevosInscritos: 0, unicos: 0 };
-    const asistentes = r.entrada + c.nuevosAsistentes;
+    const personasFeria = r.personasEntrada || 0;
+    const asistentes = personasFeria + c.nuevosAsistentes;
     const inscritos = r.totalRegistrados + c.nuevosInscritos;
     $('kEnt').textContent = asistentes;
-    $('kEntDet').textContent = 'Feria ' + r.entrada + ' · Competencias +' + c.nuevosAsistentes +
-      ' (de ' + c.unicos + ' competidores, sin repetir nombres)' + (c.errores ? ' · Error: ' + c.errores : '');
+    $('kEntDet').textContent = 'Feria ' + personasFeria + ' personas (' + r.entrada + ' ingresos) · Competencias +' +
+      c.nuevosAsistentes + ' (de ' + c.unicos + ' competidores)' + (c.errores ? ' · Error: ' + c.errores : '');
     // Asistencia total sobre inscritos
     $('kPct').textContent = (inscritos ? Math.round(asistentes / inscritos * 100) : 0) + '%';
     $('kSitio').textContent = r.enSitio;
