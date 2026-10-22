@@ -205,8 +205,6 @@
     const asistentes = personasFeria + c.nuevosAsistentes;
     const inscritos = r.totalRegistrados + c.nuevosInscritos;
     $('kEnt').textContent = asistentes;
-    $('kEntDet').textContent = 'Feria ' + personasFeria + ' personas (' + r.entrada + ' ingresos) · Competencias +' +
-      c.nuevosAsistentes + ' (de ' + c.unicos + ' competidores)' + (c.errores ? ' · Error: ' + c.errores : '');
     // Asistencia total sobre inscritos
     $('kPct').textContent = (inscritos ? Math.round(asistentes / inscritos * 100) : 0) + '%';
     $('kSitio').textContent = r.enSitio;
